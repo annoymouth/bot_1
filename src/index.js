@@ -18,7 +18,6 @@ for (const folder of functionFolders) {
 client.handleEvents();
 client.handleCommands();
 client.handleComponents();
-client.initPollData();
 
 client.login(process.env.token);
 (async () => {

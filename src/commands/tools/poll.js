@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const fs = require('fs');
+const pollModel = require('../../schemas/pollSchema');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -24,19 +25,20 @@ module.exports = {
   async execute(interaction) {
     if (interaction.options.getSubcommand() === 'start') {
 
-      const poll_data = require(`../../database/poll/poll_array.js`);
+      let poll_db = await pollModel.findOne({ _id: interaction.guildId });
+      const { poll_data } = poll_db;
 
-      if (poll_data['endDate'] > interaction.createdTimestamp) {
+      if (poll_db !== null && poll_data.endDate > interaction.createdTimestamp) {
 
-        await interaction.reply({content:'ごめんね、まだ前回の投票が終わってないみたい...', ephemeral: true});
+        await interaction.reply({ content: 'ごめんね、まだ前回の投票が終わってないみたい...', ephemeral: true });
 
-      } else if (poll_data['endDate'] < interaction.createdTimestamp) {
+      } else if (poll_db === null || poll_data.endDate < interaction.createdTimestamp) {
 
-        if (poll_data['pollstatus'] === 'online') {
+        if (poll_db !== null && poll_data.pollstatus === 'online') {
 
-          await interaction.reply({content:'先に前回の投票結果を知りたいな！\n「/poll result」コマンドを試してみて！', ephemeral:true})
+          await interaction.reply({ content: '先に前回の投票結果を知りたいな！\n「/poll result」コマンドを試してみて！', ephemeral: true })
 
-        } else if (poll_data['pollstatus'] === 'offline') {
+        } else if (poll_db === null || poll_data.pollstatus === 'offline') {
 
           let time = interaction.options.getInteger('time') ?? 5;
           time = time < 1 ? 1 : time > 60 * 24 ? 60 * 24 : time;
@@ -60,7 +62,8 @@ module.exports = {
             usericon: interaction.user.displayAvatarURL(),
             userid: interaction.user.id,
             pollstatus: 'online'
-          };
+          }
+
 
           let buttons = [];
           for (i = 1; i <= 5; i++) {
@@ -90,19 +93,29 @@ module.exports = {
 
           poll.messageid = message.id;
 
-          delete require.cache[require.resolve('../../database/poll/poll_array.js')]
-
-          try {
-            fs.writeFileSync(`./src/database/poll/poll_array.js`, 'module.exports = ' + JSON.stringify(poll));
-          } catch (error) {
-            console.error(error);
+          if (poll_db === null) {
+            poll_db = await pollModel.create(
+              {
+                _id: interaction.guildId,
+                poll_data: poll
+              }
+            );
+          } else {
+            poll_db = await pollModel.findOneAndUpdate(
+              { _id: interaction.guildId },
+              { poll_data: poll },
+              { new: true }
+            );
           }
         };
       }
 
 
     } else if (interaction.options.getSubcommand() === 'result') {
-      const poll_data = require(`../../database/poll/poll_array.js`);
+
+      let poll_db = await pollModel.findOne({ _id: interaction.guildId });
+      const { poll_data } = poll_db;
+
       if (poll_data['endDate'] > interaction.createdTimestamp) {
 
         if (interaction.user.id !== poll_data['userid']) {
@@ -115,12 +128,18 @@ module.exports = {
 
       if (poll_data['pollstatus'] === 'offline') {
 
-        await interaction.reply({content:'投票はまだ行われてないよ！', ephemeral: true});
+        await interaction.reply({ content: '投票はまだ行われてないよ！', ephemeral: true });
 
       } else if (poll_data['pollstatus'] === 'online') {
 
-        poll_data['pollstatus'] = 'offline';
-        poll_data['endDate'] = interaction.createdTimestamp;
+        poll_db = await pollModel.findOneAndUpdate(
+          { _id: interaction.guildId },
+          {
+            'poll_data.pollstatus': 'offline',
+            'poll_data.endDate': interaction.createdTimestamp
+          },
+          { new: true }
+        );
 
         let result = '';
         for (i = 1; i <= 5; i++) {

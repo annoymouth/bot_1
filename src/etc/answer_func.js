@@ -1,8 +1,12 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const fs = require('fs');
+const pollModel = require('../schemas/pollSchema');
 
 module.exports = async (interaction, num) => {
-    const poll_data = require(`../database/poll/poll_array`);
+
+    let poll_db = await pollModel.findOne({ _id: interaction.guildId });
+    const { poll_data } = poll_db;
+
     if (poll_data['pollstatus'] === 'offline') {
 
         await interaction.reply({ content: 'この投票はもう終わってるよ', ephemeral: true })
@@ -25,11 +29,13 @@ module.exports = async (interaction, num) => {
                 } else {
                     poll_data[`answer${num}_votes`] += 1;
                     poll_data.members.push(interaction.user.id);
-                    try {
-                        fs.writeFileSync(`./src/database/poll/poll_array.js`, 'module.exports = ' + JSON.stringify(poll_data));
-                    } catch (error) {
-                        console.error(error);
-                    }
+                    poll_db = await pollModel.findOneAndUpdate(
+                        { _id: interaction.guildId },
+                        {
+                          poll_data: poll_data
+                        },
+                        { new: true }
+                      );
                     let buttons = [];
                     for (i = 1; i <= 5; i++) {
                         if (poll_data[`answer${i}`] != undefined) {

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('node:path');
+const { connect } = require('mongoose');
 require('dotenv').config();
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 
@@ -19,4 +20,9 @@ client.handleCommands();
 client.handleComponents();
 client.initPollData();
 
-client.login(process.env.token)
+client.login(process.env.token);
+(async () => {
+    await connect(process.env.databaseToken)
+    .then(() => { console.log('connected to database')})
+    .catch((error) => {console.log(error)});
+})();

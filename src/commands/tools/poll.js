@@ -26,19 +26,31 @@ module.exports = {
     if (interaction.options.getSubcommand() === 'start') {
 
       let poll_db = await pollModel.findOne({ _id: interaction.guildId });
+      if (poll_db === null) {
+        let int_poll = {
+          endDate: 0,
+          pollstatus: 'offline'
+        }
+        poll_db = await pollModel.create(
+          {
+            _id: interaction.guildId,
+            poll_data: int_poll
+          }
+        );
+      }
       const { poll_data } = poll_db;
 
-      if (poll_db !== null && poll_data.endDate > interaction.createdTimestamp) {
+      if (poll_data.endDate > interaction.createdTimestamp) {
 
         await interaction.reply({ content: 'ごめんね、まだ前回の投票が終わってないみたい...', ephemeral: true });
 
-      } else if (poll_db === null || poll_data.endDate < interaction.createdTimestamp) {
+      } else if (poll_data.endDate < interaction.createdTimestamp) {
 
-        if (poll_db !== null && poll_data.pollstatus === 'online') {
+        if (poll_data.pollstatus === 'online') {
 
           await interaction.reply({ content: '先に前回の投票結果を知りたいな！\n「/poll result」コマンドを試してみて！', ephemeral: true })
 
-        } else if (poll_db === null || poll_data.pollstatus === 'offline') {
+        } else if (poll_data.pollstatus === 'offline') {
 
           let time = interaction.options.getInteger('time') ?? 5;
           time = time < 1 ? 1 : time > 60 * 24 ? 60 * 24 : time;
@@ -93,20 +105,13 @@ module.exports = {
 
           poll.messageid = message.id;
 
-          if (poll_db === null) {
-            poll_db = await pollModel.create(
-              {
-                _id: interaction.guildId,
-                poll_data: poll
-              }
-            );
-          } else {
-            poll_db = await pollModel.findOneAndUpdate(
-              { _id: interaction.guildId },
-              { poll_data: poll },
-              { new: true }
-            );
-          }
+          
+          poll_db = await pollModel.findOneAndUpdate(
+            { _id: interaction.guildId },
+            { poll_data: poll },
+            { new: true }
+          );
+
         };
       }
 

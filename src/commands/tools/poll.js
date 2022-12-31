@@ -47,10 +47,10 @@ module.exports = {
       } else if (poll_data.endDate < interaction.createdTimestamp) {
 
         if (poll_data.pollstatus === 'online') {
+          poll_data.pollstatus = 'offline';
+        }
 
-          await interaction.reply({ content: '先に前回の投票結果を知りたいな！\n「/poll result」コマンドを試してみて！', ephemeral: true })
-
-        } else if (poll_data.pollstatus === 'offline') {
+        if (poll_data.pollstatus === 'offline') {
 
           let time = interaction.options.getInteger('time') ?? 5;
           time = time < 1 ? 1 : time > 60 * 24 ? 60 * 24 : time;
@@ -105,12 +105,16 @@ module.exports = {
 
           poll.messageid = message.id;
 
-          
+
           poll_db = await pollModel.findOneAndUpdate(
             { _id: interaction.guildId },
             { poll_data: poll },
             { new: true }
           );
+          /*
+          console.log(poll_db.poll_data); //デバッグ用です。きっと役に立ちます。
+          console.log(poll_data);
+          */
 
         };
       }

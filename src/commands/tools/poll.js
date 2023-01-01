@@ -16,7 +16,13 @@ module.exports = {
         .addStringOption(option => option.setName('answer3').setDescription('3つ目はここだよ～！'))
         .addStringOption(option => option.setName('answer4').setDescription('俺の出番ってわけか'))
         .addStringOption(option => option.setName('answer5').setDescription('僕を使ってくれるんですか！？'))
-        .addIntegerOption(option => option.setName('time').setDescription('投票時間を入力してね！単位は分だよ！')))
+        .addIntegerOption(option => option.setName('time').setDescription('投票時間を入力してね！単位は分だよ！'))
+        .addStringOption(option => option.setName('type')
+        .setDescription('投票のタイプを選択してね！')
+        .addChoices(
+          {name: 'nomal', value: 'nomal'},
+          {name: 'multiple', value: 'multiple'}
+        )))
     .addSubcommand(subcommand =>
       subcommand
         .setName('result')
@@ -62,11 +68,12 @@ module.exports = {
             answer3: interaction.options.getString('answer3') ?? undefined,
             answer4: interaction.options.getString('answer4') ?? undefined,
             answer5: interaction.options.getString('answer5') ?? undefined,
-            answer1_votes: 0,
-            answer2_votes: 0,
-            answer3_votes: 0,
-            answer4_votes: 0,
-            answer5_votes: 0,
+            answer1_votes: [],
+            answer2_votes: [],
+            answer3_votes: [],
+            answer4_votes: [],
+            answer5_votes: [],
+            pollType: interaction.options.getString('type') ?? 'nomal',
             startDate: interaction.createdTimestamp,
             endDate: (interaction.createdTimestamp + 1000 * 60 * time),
             members: [],
@@ -112,8 +119,9 @@ module.exports = {
             { new: true }
           );
           /*
-          console.log(poll_db.poll_data); //デバッグ用です。きっと役に立ちます。
-          console.log(poll_data);
+          //デバッグ用です。きっと役に立ちます。
+          console.log(poll_db.poll_data); //現在
+          console.log(poll_data); //過去
           */
 
         };
@@ -153,7 +161,7 @@ module.exports = {
         let result = '';
         for (i = 1; i <= 5; i++) {
           if (poll_data[`answer${i}`] != undefined) {
-            result += `${poll_data[`answer${i}`]}: ${poll_data[`answer${i}_votes`]}\n`
+            result += `${poll_data[`answer${i}`]}: ${poll_data[`answer${i}_votes`].length}\n`
           }
         }
 

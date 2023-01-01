@@ -7,9 +7,7 @@ module.exports = {
   async execute(interaction, client) {
     const description = 'このbotは投票を行えるbotだよ！\
           でもまだまだ調整中なんだ...\
-          もし開発を手伝ってくれるならASAPにDMして欲しいな！\
-          プログラミングはできなくても大丈夫！\
-          テストユーザーとして来てくれるだけでも嬉しいから！'
+          もし開発に興味があったらASAPにDMして！'
 
     await interaction.reply({
       embeds: [
